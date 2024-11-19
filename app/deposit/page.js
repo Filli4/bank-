@@ -28,7 +28,7 @@ const Deposit = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/me/accounts/transactions', {
+      const response = await axios.post(`${apiUrl}/me/accounts/transactions`, {
         otp,
         amount: parseFloat(amount),
       });

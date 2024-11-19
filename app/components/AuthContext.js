@@ -1,6 +1,7 @@
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const login = async (username, password) => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sessions`, {
+    const response = await fetch(`${apiUrl}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
