@@ -1,125 +1,97 @@
-//app/accounts/page.js
-'use client'
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+'use client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 const Accounts = () => {
-  const [otp, setOtp] = useState('') // OTP for session
-  const [balance, setBalance] = useState(1) // Default balance
-  const [amount, setAmount] = useState(0) // Amount to deposit
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  const [balance, setBalance] = useState(null);
+  const [amount, setAmount] = useState(0);
+  const [message, setMessage] = useState('');
+  const apiUrl = 'http://localhost:3001'; 
+  const router = useRouter();
 
-  // Get balance function (using OTP from session)
-  const handleGetBalance = async () => {
-    try {
-      setLoading(true)
-
-      // Assuming OTP is stored in localStorage (as per your previous code)
-      const storedOtp = localStorage.getItem('otp')
-      if (!storedOtp) {
-        setError('Session expired. Please log in again.')
-        setLoading(false)
-        return
-      }
-
-      // Send OTP in the Authorization header for balance retrieval
-      const response = await axios.get(`${apiUrl}/accounts`, {
-        method: 'GET', // Using GET to fetch balance
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${storedOtp}`, // Pass OTP in Authorization header
-        },
-      })
-
-      if (response.data && response.data.balance !== undefined) {
-        setBalance(response.data.balance) // Set the balance in state
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'Failed to fetch balance')
-      }
-    } catch (error) {
-      setError('Error fetching balance: ' + error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Deposit function (sending OTP and deposit amount)
-  const handleDeposit = async () => {
-    setLoading(true);
-    setError(''); // Reset error and success messages
-    setSuccess('');
-    
-    const storedOtp = localStorage.getItem('otp');
-    if (!storedOtp) {
-      setError('Session expired. Please log in again.');
-      setLoading(false);
-      return;
-    }
-  
-    if (amount <= 0) {
-      setError('Invalid deposit amount.');
-      setLoading(false);
-      return;
-    }
-  
-    try {
-      // Assuming your API URL is correct
-      const response = await axios.post(`${apiUrl}/accounts`, {
-        otp: storedOtp,
-        amount: parseFloat(amount), // Make sure amount is a number
-      });
-   if (response && response.data && response.data.balance !== undefined) {
-      setBalance(response.data.balance); // Update balance
-      setSuccess('Deposit successful!');
-    } else {
-      setError('Unexpected response from the server.');
-    }
-    
-    } catch (err) {
-      console.error('Error during deposit:', err); // For debugging purposes
-    const errorMessage = err.response ? err.response.data.message : err.message;
-    setError(`Deposit failed: ${errorMessage}`)
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  
   useEffect(() => {
-    if (otp) {
-      handleGetBalance() // Fetch balance when OTP is available or updated
+   
+    const otp = localStorage.getItem('otp');
+    if (!otp) {
+      setMessage('Session expired. Redirecting to login...');
+      setTimeout(() => {
+        router.push('/auth'); 
+      }, 1000);
+    } else {
+      fetchBalance(otp); 
     }
-  }, [otp]) // Dependency on OTP
+  }, [router]);
+
+  const fetchBalance = async (otp) => {
+    try {
+      const { data } = await axios.get(`${apiUrl}/accounts/transactions`, {
+        headers: { Authorization: `Bearer ${otp}` },
+      });
+      setBalance(data.balance); 
+    } catch (error) {
+      setMessage(error.response?.data?.error || 'Failed to fetch balance.');
+    }
+  };
+
+  const deposit = async () => {
+    const otp = localStorage.getItem('otp');
+    if (!otp) return setMessage('Session expired. Please log in.');
+
+    if (amount <= 0) return setMessage('Please enter a valid deposit amount.');
+
+    try {
+      const { data } = await axios.post(`${apiUrl}/me/accounts/transactions`, { otp, amount });
+      setBalance(data.balance);
+      setMessage('Deposit successful!');
+      setAmount(0); 
+    } catch (error) {
+      setMessage(error.response?.data?.error || 'Failed to deposit funds.');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('otp'); 
+    setMessage('Logged out successfully. Redirecting to login...');
+    setTimeout(() => {
+      router.push('/auth'); 
+    }, 1000);
+  };
 
   return (
-    <div className='bg-slate-700 w-fit m-6 p-6 flex flex-col gap-2 justify-center items-center rounded-lg'>
-      <div className='text-lg text-white text-wrap p-4 my-4 font-bold'>
-        <p>Balance: {balance}</p>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">My Account</h1>
+
+      <div className="bg-gray-200 p-4 rounded-lg mb-4">
+        <p className="text-lg">Balance: {balance !== null ? `$${balance}` : 'Loading...'}</p>
       </div>
-      <div>
+
+      <div className="mb-4">
         <input
-          type='number'
+          type="number"
           value={amount}
-          onChange={(e) => setAmount(parseFloat(e.target.value))}
-          className='p-2 rounded-lg text-xl bg-slate-200 w-44'
+          onChange={(e) => setAmount(Number(e.target.value))}
           placeholder="Deposit Amount"
+          className="border p-2 rounded w-full mb-2"
         />
         <button
-          className='mx-4 p-3 text-wrap text-lg text-white hover:bg-slate-900 rounded-lg'
-          onClick={handleDeposit}
-          disabled={loading}
+          onClick={deposit}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          {loading ? 'Processing...' : 'Deposit'}
+          Deposit
         </button>
       </div>
-      {error && <p className='text-red-500'>{error}</p>}
-      {success && <p className='text-green-500'>{success}</p>}
-    </div>
-  )
-}
 
-export default Accounts
+      {message && <p className="text-blue-500 mb-4">{message}</p>}
+
+      <button
+        onClick={logout}
+        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
+      >
+        Logout
+      </button>
+    </div>
+  );
+};
+
+export default Accounts;

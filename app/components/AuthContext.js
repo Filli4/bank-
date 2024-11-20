@@ -16,6 +16,6 @@ const login = async (username, password) => {
     }
   } catch (error) {
     console.error('Login error:', error.message);
-    // You might want to set an error state here to display to the user
+   
   }
 };
