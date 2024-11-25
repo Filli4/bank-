@@ -19,15 +19,16 @@ services:
 
   db:
     image: mysql:8
+    platform: linux/amd64
     container_name: mysql_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: Lifeishell.69
+      MYSQL_DATABASE: my_bank
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Lifeishell.69
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
 
