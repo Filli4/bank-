@@ -1,21 +1,28 @@
+#root docker-compose.yaml
 services:
-  nextjs:
-    build: .
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    depends_on:
-      - express
+      - "3001:3001" # Backend service exposed on port 3001
     env_file:
       - .env
+   
 
-  express:
-    build: ./backend
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "3000:3000" # Frontend service exposed on port 3000
     depends_on:
-      - db
+      - backend
     env_file:
-      - ./backend/.env
+      - .env
+  
+
+  
 
   db:
     image: mysql:8
